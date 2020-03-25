@@ -5,18 +5,18 @@ import scala.quoted.matching._
 
 /**
   * Provides the `hex` string interpolator, which returns `ByteVector` instances from hexadecimal strings.
-  * 
+  *
   * @example {{{
   * scala> val b = hex"deadbeef"
   * val b: scodec.bits.ByteVector = ByteVector(4 bytes, 0xdeadbeef)
   * }}}
   */
-inline def (ctx: StringContext).hex (inline args: ByteVector*): ByteVector =
+inline def (inline ctx: StringContext).hex (inline args: ByteVector*): ByteVector =
   ${hexInterpolator('ctx, 'args)}
 
 private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[ByteVector]])(using qctx: QuoteContext): Expr[ByteVector] = {
   (strCtxExpr, argsExpr) match {
-    case ('{ StringContext(${ExprSeq(parts)}: _*) }, ExprSeq(args)) =>
+    case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
       val partValues: Seq[String] = parts.map { case p @ Const(part) =>
         if (ByteVector.fromHex(part).isEmpty)
           qctx.error("hexadecimal string literal may only contain characters [0-9a-fA-f]", p)
@@ -42,12 +42,12 @@ private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[
   * val b: scodec.bits.BitVector = BitVector(10 bits, 0xaa8)
   * }}}
   */
-inline def (ctx: StringContext).bin (inline args: BitVector*): BitVector =
+inline def (inline ctx: StringContext).bin (inline args: BitVector*): BitVector =
   ${binInterpolator('ctx, 'args)}
 
 private def binInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[BitVector]])(using qctx: QuoteContext): Expr[BitVector] = {
   (strCtxExpr, argsExpr) match {
-    case ('{ StringContext(${ExprSeq(parts)}: _*) }, ExprSeq(args)) =>
+    case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
       val partValues: Seq[String] = parts.map { case p @ Const(part) =>
         if (BitVector.fromBin(part).isEmpty)
           qctx.error("binary string literal may only contain characters [0, 1]", p)
