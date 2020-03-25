@@ -99,7 +99,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest" % "3.1.0-SNAP13" % "test",
       "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.0.0-RC3" % "test",
-      "org.scalacheck" %%% "scalacheck" % "1.14.1" % "test"
+      "org.scalacheck" %%% "scalacheck" % "1.14.1-SNAPSHOT" % "test"
     ),
     libraryDependencies ++= {
       if (isDotty.value) Nil
