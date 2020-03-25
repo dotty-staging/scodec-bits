@@ -97,11 +97,9 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "scodec-bits",
     libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest" % "3.1.1" % "test",
-      ("org.scalatestplus" %%% "scalacheck-1-14" % "3.1.1.1" % "test")
-        .intransitive()
-        .withDottyCompat(scalaVersion.value),
-      ("org.scalacheck" %%% "scalacheck" % "1.14.3" % "test").withDottyCompat(scalaVersion.value)
+      "org.scalatest" %%% "scalatest" % "3.1.0-SNAP13" % "test",
+      "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.0.0-RC3" % "test",
+      "org.scalacheck" %%% "scalacheck" % "1.14.1" % "test"
     ),
     libraryDependencies ++= {
       if (isDotty.value) Nil
