@@ -16,13 +16,15 @@ private[bits] object ByteVectorFromDigits {
   }
 
   def digitsToByteVector(digits: String, radix: Int): ByteVector =
-    if (radix == 16) ByteVector.fromValidHex(digits.tail)
+    if (radix == 16) ByteVector.fromValidHex(digits)
     else throw FromDigits.MalformedNumber(s"unsupported radix $radix")
 
   object Instance extends Base {
+    /* Disabled for now as they are generating null values with current dotty head
     override inline def fromDigits(digits: String): ByteVector =
       ${digitsToByteVectorMacro('digits, Expr(10))}
     override inline def fromDigits(digits: String, radix: Int): ByteVector =
       ${digitsToByteVectorMacro('digits, 'radix)}
+     */
   }
 }

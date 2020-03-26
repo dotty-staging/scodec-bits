@@ -7,7 +7,7 @@ def digitsToBitVectorMacro(digits: Expr[String], radix: Expr[Int])(using qctx: Q
   (digits, radix) match {
     case (Const(ds), Const(r)) =>
       if (r == 16) {
-        '{ByteVector.fromValidHex($digits.tail).bits}
+        '{ByteVector.fromValidHex($digits).bits}
       } else {
         qctx.error(s"unsupported radix $r", radix)
         '{BitVector.empty}
@@ -20,7 +20,7 @@ def digitsToByteVectorMacro(digits: Expr[String], radix: Expr[Int])(using qctx: 
   (digits, radix) match {
     case (Const(ds), Const(r)) =>
       if (r == 16) {
-        '{ByteVector.fromValidHex($digits.tail)}
+        '{ByteVector.fromValidHex($digits)}
       } else {
         qctx.error(s"unsupported radix $r", radix)
         '{ByteVector.empty}
