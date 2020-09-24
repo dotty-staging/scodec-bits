@@ -10,7 +10,7 @@ import scala.quoted._
   * val b: scodec.bits.ByteVector = ByteVector(4 bytes, 0xdeadbeef)
   * }}}
   */
-inline def (inline ctx: StringContext).hex (inline args: ByteVector*): ByteVector =
+extension (inline ctx: StringContext) inline def hex (inline args: ByteVector*): ByteVector =
   ${hexInterpolator('ctx, 'args)}
 
 private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[ByteVector]])(using qctx: QuoteContext): Expr[ByteVector] = {
@@ -41,7 +41,7 @@ private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[
   * val b: scodec.bits.BitVector = BitVector(10 bits, 0xaa8)
   * }}}
   */
-inline def (inline ctx: StringContext).bin (inline args: BitVector*): BitVector =
+extension (inline ctx: StringContext) inline def bin (inline args: BitVector*): BitVector =
   ${binInterpolator('ctx, 'args)}
 
 private def binInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[BitVector]])(using qctx: QuoteContext): Expr[BitVector] = {
