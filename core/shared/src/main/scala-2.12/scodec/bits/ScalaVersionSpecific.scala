@@ -28,12 +28,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package scodec
+package scodec.bits
 
-import scala.language.experimental.macros
+private[bits] trait ScalaVersionSpecific {
 
-/** Provides immutable data types for working with bits and bytes.
-  *
-  * @see [[BitVector]] and [[ByteVector]]
-  */
-package object bits
+  type IterableOnce[+A] = collection.GenTraversableOnce[A]
+
+  implicit class IterableOnceOps[A](private val self: IterableOnce[A]) {
+    def iterator: Iterator[A] = self.toIterator
+  }
+}

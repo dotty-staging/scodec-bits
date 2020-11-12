@@ -5,97 +5,122 @@ import com.typesafe.sbt.SbtGit.GitKeys.{gitCurrentBranch, gitHeadCommit}
 addCommandAlias("fmt", "; compile:scalafmt; test:scalafmt; scalafmtSbt")
 addCommandAlias("fmtCheck", "; compile:scalafmtCheck; test:scalafmtCheck; scalafmtSbtCheck")
 
-lazy val contributors = Seq(
+ThisBuild / baseVersion := "1.1"
+
+ThisBuild / organization := "org.scodec"
+ThisBuild / organizationName := "Scodec"
+
+ThisBuild / homepage := Some(url("https://github.com/scodec/scodec-bits"))
+ThisBuild / startYear := Some(2013)
+
+ThisBuild / crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.3", "0.27.0-RC1", "3.0.0-M1")
+
+ThisBuild / strictSemVer := false
+
+ThisBuild / versionIntroduced := Map(
+  "3.0.0-M1" -> "1.1.99",
+  "0.27.0-RC1" -> "1.1.99",
+  "2.13" -> "1.1.12",
+  "2.12" -> "1.1.2",
+  "2.11" -> "1.1.99" // Ignore 2.11 in mima
+)
+
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowPublishTargetBranches := Seq(
+  RefPredicate.Equals(Ref.Branch("main")),
+  RefPredicate.StartsWith(Ref.Tag("v"))
+)
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("compile")),
+  WorkflowStep.Sbt(List("coreJVM/test")),
+  WorkflowStep.Sbt(List("coreJS/test")),
+  WorkflowStep.Sbt(List("+mimaReportBinaryIssues"))
+)
+
+ThisBuild / githubWorkflowEnv ++= Map(
+  "SONATYPE_USERNAME" -> s"$${{ secrets.SONATYPE_USERNAME }}",
+  "SONATYPE_PASSWORD" -> s"$${{ secrets.SONATYPE_PASSWORD }}",
+  "PGP_SECRET" -> s"$${{ secrets.PGP_SECRET }}"
+)
+
+ThisBuild / githubWorkflowTargetTags += "v*"
+
+ThisBuild / githubWorkflowPublishPreamble +=
+  WorkflowStep.Run(
+    List("echo $PGP_SECRET | base64 -d | gpg --import"),
+    name = Some("Import signing key")
+  )
+
+ThisBuild / githubWorkflowPublish := Seq(WorkflowStep.Sbt(List("release")))
+
+ThisBuild / scmInfo := Some(
+  ScmInfo(url("https://github.com/scodec/scodec-bits"), "git@github.com:scodec/scodec-bits.git")
+)
+
+ThisBuild / licenses := List(
+  ("BSD-3-Clause", url("https://github.com/scodec/scodec-bits/blob/main/LICENSE"))
+)
+
+ThisBuild / testFrameworks += new TestFramework("munit.Framework")
+
+ThisBuild / publishGithubUser := "mpilquist"
+ThisBuild / publishFullName := "Michael Pilquist"
+ThisBuild / developers ++= List(
   "mpilquist" -> "Michael Pilquist",
   "pchiusano" -> "Paul Chiusano"
+).map { case (username, fullName) =>
+  Developer(username, fullName, s"@$username", url(s"https://github.com/$username"))
+}
+
+ThisBuild / fatalWarningsInCI := false
+
+ThisBuild / mimaBinaryIssueFilters ++= Seq(
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("scodec.bits.ByteVector.grouped"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ByteVector$GroupedOp"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ByteVector$GroupedOp$"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.ByteVector.GroupedOp"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.ByteVector$GroupedOp"),
+  ProblemFilters.exclude[IncompatibleResultTypeProblem]("scodec.bits.BitVector.grouped"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.BitVector$GroupedOp"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.BitVector$GroupedOp$"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.BitVector.GroupedOp"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.BitVector$GroupedOp"),
+  ProblemFilters.exclude[IncompatibleTemplateDefProblem]("scodec.bits.ScalaVersionSpecific"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ScalaVersionSpecific$"),
+  ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.package.EitherOps"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.package$EitherOps"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.package$EitherOps$"),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem](
+    "scodec.bits.LiteralSyntaxMacros.hexStringInterpolator"
+  ),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem](
+    "scodec.bits.LiteralSyntaxMacros.binStringInterpolator"
+  ),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.LiteralSyntaxMacros$blackbox$"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.LiteralSyntaxMacros$blackbox$"),
+  ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ScalaVersionSpecific"),
+  ProblemFilters.exclude[IncompatibleMethTypeProblem]("scodec.bits.BitVector.reduceBalanced")
 )
 
 lazy val commonSettings = Seq(
-  organization := "org.scodec",
-  organizationHomepage := Some(new URL("http://scodec.org")),
-  licenses += ("Three-clause BSD-style", url(
-    "https://github.com/scodec/scodec-bits/blob/master/LICENSE"
-  )),
-  git.remoteRepo := "git@github.com:scodec/scodec-bits.git",
-  scmInfo := Some(
-    ScmInfo(url("https://github.com/scodec/scodec-bits"), "git@github.com:scodec/scodec-bits.git")
-  ),
   Compile / unmanagedSourceDirectories ++= {
-    if (isDotty.value)
-      List(CrossType.Pure, CrossType.Full).flatMap(
-        _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-3"))
-      )
-    else Nil
+    val major = if (isDotty.value) "-3" else "-2"
+    List(CrossType.Pure, CrossType.Full).flatMap(
+      _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + major))
+    )
   },
   unmanagedResources in Compile ++= {
     val base = baseDirectory.value
     (base / "NOTICE") +: (base / "LICENSE") +: ((base / "licenses") * "LICENSE_*").get
   },
-  scalacOptions ++= Seq(
-    "-encoding",
-    "UTF-8",
-    "-deprecation",
-    "-feature",
-    "-unchecked"
-  ) ++
-    (scalaBinaryVersion.value match {
-      case v if v.startsWith("2.13") =>
-        List("-Xlint", "-Ywarn-unused")
-      case v if v.startsWith("2.12") =>
-        Nil
-      case v if v.startsWith("0.") =>
-        Nil
-      case other => sys.error(s"Unsupported scala version: $other")
-    }),
-  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
-  releaseCrossBuild := true
-) ++ publishingSettings
-
-lazy val publishingSettings = Seq(
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots".at(nexus + "content/repositories/snapshots"))
-    else
-      Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
-  },
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { x =>
-    false
-  },
-  pomExtra := (
-    <url>http://github.com/scodec/scodec-bits</url>
-    <developers>
-      {for ((username, name) <- contributors) yield <developer>
-        <id>{username}</id>
-        <name>{name}</name>
-        <url>http://github.com/{username}</url>
-      </developer>}
-    </developers>
-  ),
-  pomPostProcess := { (node) =>
-    import scala.xml._
-    import scala.xml.transform._
-    def stripIf(f: Node => Boolean) = new RewriteRule {
-      override def transform(n: Node) =
-        if (f(n)) NodeSeq.Empty else n
-    }
-    val stripTestScope = stripIf { n =>
-      n.label == "dependency" && (n \ "scope").text == "test"
-    }
-    new RuleTransformer(stripTestScope).transform(node)(0)
-  }
+  scalacOptions := scalacOptions.value.filterNot(_ == "-source:3.0-migration")
 )
 
 lazy val root = project
   .in(file("."))
   .aggregate(coreJVM, coreJS, benchmark)
   .settings(commonSettings: _*)
-  .settings(
-    publishArtifact := false,
-    mimaPreviousArtifacts := Set.empty
-  )
+  .settings(noPublishSettings)
 
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .in(file("core"))
@@ -103,80 +128,22 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings: _*)
   .settings(
     name := "scodec-bits",
-    libraryDependencies ++= Seq(
-      "org.scalatest" %%% "scalatest" % "3.1.0-SNAP13" % "test",
-      "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.0.0-RC3" % "test",
-      "org.scalacheck" %%% "scalacheck" % "1.14.1-SNAPSHOT" % "test"
-    ),
     libraryDependencies ++= {
       if (isDotty.value) Nil
       else Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided")
     },
-    autoAPIMappings := true,
     buildInfoPackage := "scodec.bits",
-    buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit),
-    publishArtifact in (Compile, packageDoc) := !isDotty.value,
-    scalacOptions in (Compile, doc) := {
-      val tagOrBranch = {
-        if (version.value.endsWith("SNAPSHOT")) gitCurrentBranch.value
-        else ("v" + version.value)
-      }
-      if (isDotty.value) Nil
-      else
-        Seq(
-          "-groups",
-          "-implicits",
-          "-implicits-show-all",
-          "-sourcepath",
-          new File(baseDirectory.value, "../..").getCanonicalPath,
-          "-doc-source-url",
-          "https://github.com/scodec/scodec-bits/tree/" + tagOrBranch + "€{FILE_PATH}.scala"
-        )
-    },
-    scalacOptions in (Compile, console) ~= {
-      _.filterNot { o =>
-        o == "-Ywarn-unused" || o == "-Xfatal-warnings"
-      }
-    },
-    publishArtifact in (Compile, packageDoc) := !isDotty.value,
-    publishArtifact in packageDoc := !isDotty.value,
-    scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-    mimaPreviousArtifacts := {
-      List("1.1.12").map { pv =>
-        organization.value % (normalizedName.value + "_" + scalaBinaryVersion.value) % pv
-      }.toSet
-    },
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("scodec.bits.ByteVector.grouped"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ByteVector$GroupedOp"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ByteVector$GroupedOp$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.ByteVector.GroupedOp"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.ByteVector$GroupedOp"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("scodec.bits.BitVector.grouped"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.BitVector$GroupedOp"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.BitVector$GroupedOp$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.BitVector.GroupedOp"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.BitVector$GroupedOp"),
-      ProblemFilters.exclude[IncompatibleTemplateDefProblem]("scodec.bits.ScalaVersionSpecific"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ScalaVersionSpecific$"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("scodec.bits.package.EitherOps"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.package$EitherOps"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.package$EitherOps$"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem](
-        "scodec.bits.LiteralSyntaxMacros.hexStringInterpolator"
-      ),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem](
-        "scodec.bits.LiteralSyntaxMacros.binStringInterpolator"
-      ),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.LiteralSyntaxMacros$blackbox$"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.LiteralSyntaxMacros$blackbox$"),
-      ProblemFilters.exclude[MissingClassProblem]("scodec.bits.ScalaVersionSpecific")
-    )
+    buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit)
+  )
+  .settings(dottyLibrarySettings)
+  .settings(dottyJsSettings(ThisBuild / crossScalaVersions))
+  .settings(
+    libraryDependencies += "org.scalameta" %%% "munit-scalacheck" % "0.7.16" % "test"
   )
 
-lazy val coreJVM = core.jvm.settings(
+lazy val coreJVM = core.jvm.enablePlugins(SbtOsgi).settings(osgiSettings).settings(
   libraryDependencies ++= Seq(
-    "com.google.guava" % "guava" % "23.0" % "test"
+    "com.google.guava" % "guava" % "30.0-jre" % "test"
   ),
   OsgiKeys.privatePackage := Nil,
   OsgiKeys.exportPackage := Seq("scodec.bits.*;version=${Bundle-Version}"),
@@ -187,14 +154,14 @@ lazy val coreJVM = core.jvm.settings(
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
 
-lazy val coreJS = core.js
+lazy val coreJS = core.js.settings(
+  scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  crossScalaVersions := crossScalaVersions.value.filter(_.startsWith("2."))
+)
 
 lazy val benchmark: Project = project
   .in(file("benchmark"))
   .dependsOn(coreJVM)
   .enablePlugins(JmhPlugin)
   .settings(commonSettings: _*)
-  .settings(
-    publishArtifact := false,
-    mimaPreviousArtifacts := Set.empty
-  )
+  .settings(noPublishSettings)

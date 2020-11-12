@@ -28,12 +28,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package scodec
+package scodec.bits
 
-import scala.language.experimental.macros
-
-/** Provides immutable data types for working with bits and bytes.
-  *
-  * @see [[BitVector]] and [[ByteVector]]
-  */
-package object bits
+private[bits] trait BitVectorPlatform

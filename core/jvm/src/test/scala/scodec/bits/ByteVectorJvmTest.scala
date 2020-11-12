@@ -1,19 +1,85 @@
+/*
+ * Copyright (c) 2013, Scodec
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package scodec.bits
 
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Prop.forAll
 import Arbitrary.arbitrary
 import Arbitraries._
 
+import java.util.concurrent.Callable
+
 class ByteVectorJvmTest extends BitsSuite {
 
-  test("toBase64") {
+  var pool: java.util.concurrent.ExecutorService = null
+
+  override def beforeAll() = {
+    super.beforeAll()
+    pool = java.util.concurrent.Executors.newFixedThreadPool(4)
+  }
+
+  override def afterAll() = {
+    pool.shutdownNow()
+    super.afterAll()
+  }
+
+  property("toBase64") {
     forAll { (b: ByteVector) =>
       val guavaB64 = com.google.common.io.BaseEncoding.base64
       assert(ByteVector.view(guavaB64.decode(b.toBase64)) == b)
     }
   }
 
-  test("fromBase64") {
+  property("toBase64NoPad") {
+    forAll { (b: ByteVector) =>
+      val guavaB64 = com.google.common.io.BaseEncoding.base64.omitPadding()
+      assert(ByteVector.view(guavaB64.decode(b.toBase64NoPad)) == b)
+    }
+  }
+
+  property("toBase64Url") {
+    forAll { (b: ByteVector) =>
+      val guavaB64 = com.google.common.io.BaseEncoding.base64Url()
+      assert(ByteVector.view(guavaB64.decode(b.toBase64Url)) == b)
+    }
+  }
+
+  property("toBase64UrlNoPad") {
+    forAll { (b: ByteVector) =>
+      val guavaB64 = com.google.common.io.BaseEncoding.base64Url().omitPadding()
+      assert(ByteVector.view(guavaB64.decode(b.toBase64UrlNoPad)) == b)
+    }
+  }
+
+  property("fromBase64") {
     forAll { (b: ByteVector) =>
       val guavaB64 = com.google.common.io.BaseEncoding.base64
       assert(ByteVector.fromValidBase64(guavaB64.encode(b.toArray)) == b)
@@ -60,10 +126,7 @@ class ByteVectorJvmTest extends BitsSuite {
     assert(ByteVector.fromBase64Descriptive("") == Right(ByteVector.empty))
   }
 
-  test("buffer concurrency") {
-    import java.util.concurrent.Callable
-    val pool = java.util.concurrent.Executors.newFixedThreadPool(4)
-
+  property("buffer concurrency") {
     // Concurrently append b1.buffer ++ b2 and b1.buffer ++ b3
     // making sure this gives same results as unbuffered appends
     forAll { (b1: ByteVector, b2: ByteVector, b3: ByteVector, n: Int) =>
@@ -75,21 +138,20 @@ class ByteVectorJvmTest extends BitsSuite {
       assert(rb1b2.get == (b1 ++ b2))
       assert(rb1b3.get == (b1 ++ b3))
     }
-    pool.shutdown
   }
 
-  test("digest") {
+  property("digest") {
     forAll { (x: ByteVector) =>
       val sha256 = java.security.MessageDigest.getInstance("SHA-256")
       assert(x.digest("SHA-256") == ByteVector.view(sha256.digest(x.toArray)))
     }
   }
 
-  test("gzip") {
-    forAll { (x: ByteVector) =>
-      assert(x.deflate().inflate() == Right(x))
-    }
+  property("gzip (1)") {
+    forAll((x: ByteVector) => assert(x.deflate().inflate() == Right(x)))
+  }
 
+  property("gzip (2)") {
     val deflatableByteVectors = for {
       b <- arbitrary[Byte]
       sz <- Gen.chooseNum(1L, 8192L)
@@ -99,9 +161,7 @@ class ByteVectorJvmTest extends BitsSuite {
     }
   }
 
-  test("serialization") {
-    forAll { (x: ByteVector) =>
-      serializationShouldRoundtrip(x)
-    }
+  property("serialization") {
+    forAll((x: ByteVector) => serializationShouldRoundtrip(x))
   }
 }
