@@ -44,7 +44,7 @@ private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[
 extension (inline ctx: StringContext) inline def bin (inline args: BitVector*): BitVector =
   ${binInterpolator('ctx, 'args)}
 
-private def binInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[BitVector]])(using qctx: Quotes): Expr[BitVector] = {
+private def binInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[BitVector]])(using Quotes): Expr[BitVector] = {
   (strCtxExpr, argsExpr) match {
     case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
       val partValues: Seq[String] = parts.map { case p @ Const(part) =>
