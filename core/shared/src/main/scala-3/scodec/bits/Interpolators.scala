@@ -18,7 +18,7 @@ private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[
     case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
       val partValues: Seq[String] = parts.map { case p @ Const(part) =>
         if (ByteVector.fromHex(part).isEmpty)
-          report.error("hexadecimal string literal may only contain characters [0-9a-fA-f]", p)
+          quotes.reflect.report.error("hexadecimal string literal may only contain characters [0-9a-fA-f]", p)
         part
       }
       if (partValues.size == 1)
@@ -49,7 +49,7 @@ private def binInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[
     case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
       val partValues: Seq[String] = parts.map { case p @ Const(part) =>
         if (BitVector.fromBin(part).isEmpty)
-          report.error("binary string literal may only contain characters [0, 1]", p)
+          quotes.reflect.report.error("binary string literal may only contain characters [0, 1]", p)
         part
       }
       if (partValues.size == 1)
