@@ -16,7 +16,8 @@ extension (inline ctx: StringContext) inline def hex (inline args: ByteVector*):
 private def hexInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[ByteVector]])(using Quotes): Expr[ByteVector] = {
   (strCtxExpr, argsExpr) match {
     case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
-      val partValues: Seq[String] = parts.map { case p @ Const(part) =>
+      val partValues: Seq[String] = parts.map { p =>
+        val part = p.unliftOrError
         if (ByteVector.fromHex(part).isEmpty)
           quotes.reflect.report.error("hexadecimal string literal may only contain characters [0-9a-fA-f]", p)
         part
@@ -47,7 +48,8 @@ extension (inline ctx: StringContext) inline def bin (inline args: BitVector*): 
 private def binInterpolator(strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[BitVector]])(using Quotes): Expr[BitVector] = {
   (strCtxExpr, argsExpr) match {
     case ('{ StringContext(${Varargs(parts)}: _*) }, Varargs(args)) =>
-      val partValues: Seq[String] = parts.map { case p @ Const(part) =>
+      val partValues: Seq[String] = parts.map { p =>
+        val part = p.unliftOrError
         if (BitVector.fromBin(part).isEmpty)
           quotes.reflect.report.error("binary string literal may only contain characters [0, 1]", p)
         part
