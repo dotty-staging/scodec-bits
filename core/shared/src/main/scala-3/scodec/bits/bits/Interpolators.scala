@@ -34,7 +34,7 @@ import scala.quoted._
 
 /**
   * Provides the `hex` string interpolator, which returns `ByteVector` instances from hexadecimal strings.
-  * 
+  *
   * @example {{{
   * scala> val b = hex"deadbeef"
   * val b: scodec.bits.ByteVector = ByteVector(4 bytes, 0xdeadbeef)
@@ -68,7 +68,7 @@ object Literals {
     validate(Bin, strCtxExpr, argsExpr)
 
   def validate[A](validator: Validator[A], strCtxExpr: Expr[StringContext], argsExpr: Expr[Seq[Any]])(using Quotes): Expr[A] = {
-    strCtxExpr.unlift match {
+    strCtxExpr.value match {
       case Some(sc) => validate(validator, sc.parts, argsExpr)
       case None =>
         quotes.reflect.report.error("StringContext args must be statically known")
@@ -97,7 +97,7 @@ object Literals {
       ByteVector.fromHex(s).fold(Some("hexadecimal string literal may only contain characters [0-9a-fA-f]"))(_ => None)
     def build(s: String)(using Quotes): Expr[ByteVector] =
       '{ByteVector.fromValidHex(${Expr(s)})},
-  }    
+  }
 
   object Bin extends Validator[BitVector] {
     def validate(s: String): Option[String] =
